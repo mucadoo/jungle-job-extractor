@@ -101,8 +101,13 @@ function showToast(message) {
     }, 3000);
 }
 
-// Execute the functions
-const textToCopy = extractText();
-copyToClipboard(textToCopy);
-
-showToast('Text has been copied to clipboard!');
+// Listener for messages from the background script
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.type === 'executeScript') {
+        const textToCopy = extractText();
+        copyToClipboard(textToCopy);
+        showToast('Text has been copied to clipboard!');
+    } else if (request.type === 'showToast') {
+        showToast(request.message);
+    }
+});

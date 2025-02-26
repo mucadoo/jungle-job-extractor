@@ -3,13 +3,22 @@
   "name": "Text Extractor",
   "version": "1.0",
   "description": "Extracts text based on class and copies it to the clipboard.",
-  "permissions": ["activeTab"],
+  "permissions": ["activeTab", "tabs", "http://*/*", "https://*/*"],
   "browser_action": {
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "icon.png",
       "48": "icon.png",
       "128": "icon.png"
     }
-  }
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["contentScript.js"],
+      "css": ["style.css"]
+    }
+  ]
 }
