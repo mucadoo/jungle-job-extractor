@@ -106,7 +106,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === 'executeScript') {
         const textToCopy = extractText();
         copyToClipboard(textToCopy);
-        showToast('Text has been copied to clipboard!');
+        showToast('The job listing text has been copied to your clipboard!');
     } else if (request.type === 'showToast') {
         showToast(request.message);
     }
