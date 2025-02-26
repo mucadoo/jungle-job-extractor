@@ -88,8 +88,21 @@ function copyToClipboard(text) {
     document.body.removeChild(textarea);
 }
 
+// Function to show toast notification
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerText = message;
+    document.body.appendChild(toast);
+    toast.classList.add('show');
+    setTimeout(() => {
+        toast.classList.remove('show');
+        document.body.removeChild(toast);
+    }, 3000);
+}
+
 // Execute the functions
 const textToCopy = extractText();
 copyToClipboard(textToCopy);
 
-alert('Text has been copied to clipboard!');
+showToast('Text has been copied to clipboard!');
