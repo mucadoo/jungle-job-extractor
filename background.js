@@ -11,6 +11,6 @@ chrome.browserAction.onClicked.addListener((tab) => {
     if (isValidUrl(tab.url)) {
         chrome.tabs.sendMessage(tab.id, { type: 'executeScript' });
     } else {
-        showToast(tab.id, 'This page isn\'t a valid job listing on Welcome To The Jungle.');
+        showToast(tab.id, 'Current page isn\'t a job listing on Welcome To The Jungle.');
     }
 });

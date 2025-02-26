@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "WTJ Job Details Extractor",
+  "name": "Welcome to the Jungle Job Listing Extractor",
   "version": "1.0",
-  "description": "Extract and copy job listing details to your clipboard from 'Welcome To The Jungle' job pages.",
+  "description": "Extract and copy job listing details to your clipboard from Welcome To The Jungle job pages.",
   "permissions": ["activeTab", "tabs", "http://*/*", "https://*/*"],
   "browser_action": {
     "default_icon": {
