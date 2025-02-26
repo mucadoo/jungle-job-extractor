@@ -72,25 +72,23 @@ function extractText() {
     jobDetails.profile = extractDesc('[data-testid="job-section-experience"]');
     jobDetails.process = extractDesc('[data-testid="job-section-process"]');
 
-    return `Title: ${jobDetails.title}
-Company: ${jobDetails.company}
-Location: ${jobDetails.location}
-Contract Type: ${jobDetails.contract}
-Salary: ${jobDetails.salary}
-Start Date: ${jobDetails.startDate}
-Remote: ${jobDetails.remote}
-Experience: ${jobDetails.experience}
-Education: ${jobDetails.education}
-Required Skills: ${jobDetails.skills}
+    // Construct the job details string
+    let jobDetailsString = '';
+    jobDetailsString += `Title: ${jobDetails.title}\n`;
+    jobDetailsString += `Company: ${jobDetails.company}\n`;
+    if (jobDetails.location) jobDetailsString += `Location: ${jobDetails.location}\n`;
+    if (jobDetails.contract) jobDetailsString += `Contract Type: ${jobDetails.contract}\n`;
+    if (jobDetails.salary) jobDetailsString += `Salary: ${jobDetails.salary}\n`;
+    if (jobDetails.startDate) jobDetailsString += `Start Date: ${jobDetails.startDate}\n`;
+    if (jobDetails.remote) jobDetailsString += `Remote: ${jobDetails.remote}\n`;
+    if (jobDetails.experience) jobDetailsString += `Experience: ${jobDetails.experience}\n`;
+    if (jobDetails.education) jobDetailsString += `Education: ${jobDetails.education}\n`;
+    if (jobDetails.skills) jobDetailsString += `Required Skills: ${jobDetails.skills}\n`;
+    if (jobDetails.description) jobDetailsString += `\nJob Description:\n${jobDetails.description}\n`;
+    if (jobDetails.profile) jobDetailsString += `\nDesired Profile:\n${jobDetails.profile}\n`;
+    if (jobDetails.process) jobDetailsString += `\nInterview Process:\n${jobDetails.process}\n`;
 
-Job Description:
-${jobDetails.description}
-
-Candidate Profile:
-${jobDetails.profile}
-
-Interview Process:
-${jobDetails.process}`;
+    return jobDetailsString.trim();
 }
 
 // Function to copy text to clipboard

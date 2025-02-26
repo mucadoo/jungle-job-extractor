@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "Text Extractor",
+  "name": "WTJ Job Details Extractor",
   "version": "1.0",
-  "description": "Extracts text based on class and copies it to the clipboard.",
+  "description": "Extract and copy job listing details to your clipboard from 'Welcome To The Jungle' job pages.",
   "permissions": ["activeTab", "tabs", "http://*/*", "https://*/*"],
   "browser_action": {
     "default_icon": {
