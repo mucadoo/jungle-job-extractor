@@ -1,5 +1,5 @@
 function isValidUrl(url) {
-    const pattern = /^https:\/\/www\.welcometothejungle\.com\/\w+\/companies\/\w+\/jobs\/.*$/;
+    const pattern = /^https:\/\/www\.welcometothejungle\.com\/[\w-]+\/companies\/[\w-]+\/jobs\/.*$/;
     return pattern.test(url);
 }
 

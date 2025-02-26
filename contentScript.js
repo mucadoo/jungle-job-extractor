@@ -1,3 +1,18 @@
+// Replace line breaks with spaces
+function replaceLineBreaks(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+        return node.textContent.trim() + ' ';
+    }
+    let text = '';
+    node.childNodes.forEach(child => {
+        if (child.nodeName === 'LI') {
+            text += "-";
+        }
+        text += replaceLineBreaks(child);
+    });
+    return text;
+}
+
 // Function to extract text while excluding "Voir plus" buttons and the first <h4>
 function extractDesc(selector) {
     const element = document.querySelector(selector);
@@ -14,7 +29,7 @@ function extractDesc(selector) {
     const voirPlusButton = clone.querySelector('[data-testid="view-more-btn"]');
     if (voirPlusButton) voirPlusButton.remove();
 
-    return clone.innerText || clone.textContent;
+    return replaceLineBreaks(clone).trim();
 }
 
 function extractText() {
