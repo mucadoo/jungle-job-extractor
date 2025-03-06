@@ -33,44 +33,70 @@ function extractDesc(selector) {
 }
 
 function extractText() {
+
+    // Get all script tags
+    const scripts = document.getElementsByTagName("script");
+    // Get the metadata block container
+    const metadataBlock = document.querySelector('[data-testid="job-metadata-block"]');
+
+    let extractedData = null;
+
+    for (let script of scripts) {
+        if (script.textContent.includes("window.__INITIAL_DATA__")) {
+            // Extract the JSON string
+            const match = script.textContent.match(/window\.__INITIAL_DATA__\s*=\s*"((?:\\.|[^"\\])*)"[\r\n]/);
+            if (match) {
+                jobData = JSON.parse(JSON.parse(`"${match[1]}"`)).queries[0].state.data;
+                break;
+            }
+        }
+    }
+
     const jobDetails = {};
 
-    // Extract company name
-    const companyElement = document.querySelector('[data-testid="job-metadata-block"] a.sc-fremEr span.wui-text');
-    jobDetails.company = companyElement ? companyElement.textContent.trim() : 'N/A';
+    // Company name
+    jobDetails.company = jobData?.organization?.name ||  metadataBlock.querySelector('a span').textContent.trim();
 
-    // Extract job title
-    const titleElement = document.querySelector('[data-testid="job-metadata-block"] h2');
-    jobDetails.title = titleElement ? titleElement.textContent.trim() : 'N/A';
+    // Job title
+    jobDetails.title = jobData?.name || metadataBlock.querySelector('h2').textContent.trim();
 
-    // Extract contract type, location, salary, start date, remote work, experience, education
-    const metadataElements = document.querySelectorAll('[data-testid="job-metadata-block"] .sc-eXsaLi');
-    metadataElements.forEach(element => {
-        if (element.querySelector('[name="contract"]')) {
-            jobDetails.contract = element.textContent.trim();
-        } else if (element.querySelector('[name="location"]')) {
-            jobDetails.location = element.textContent.replace(/.*location/i, '').trim();
-        } else if (element.querySelector('[name="salary"]')) {
-            jobDetails.salary = element.textContent.replace(/.*Salaire :/i, '').trim();
-        } else if (element.querySelector('[name="clock"]')) {
-            jobDetails.startDate = element.textContent.replace(/.*Début :/i, '').trim();
-        } else if (element.querySelector('[name="remote"]')) {
-            jobDetails.remote = element.textContent.replace(/.*remote :/i, '').trim();
-        } else if (element.querySelector('[name="suitcase"]')) {
-            jobDetails.experience = element.textContent.replace(/.*Expérience :/i, '').trim();
-        } else if (element.querySelector('[name="education_level"]')) {
-            jobDetails.education = element.textContent.replace(/.*Éducation :/i, '').trim();
-        }
-    });
+    // Contract type
+    jobDetails.contract = metadataBlock.querySelector('i[name="contract"]')?.parentElement.textContent.trim() || jobData?.contract_type;
 
-    // Extract skills
-    const skillsElements = document.querySelectorAll('[data-testid="job-metadata-block"] .sc-eXsaLi.bLFFgm span');
-    jobDetails.skills = Array.from(skillsElements).map(el => el.textContent.trim()).join(', ');
+    // Location
+    jobDetails.location = metadataBlock.querySelector('i[name="location"]')?.parentElement.textContent.replace(/.*location/i, '').trim() || jobData?.office?.city;
 
-    // Extract job description
-    jobDetails.description = extractDesc('[data-testid="job-section-description"]');
-    jobDetails.profile = extractDesc('[data-testid="job-section-experience"]');
-    jobDetails.process = extractDesc('[data-testid="job-section-process"]');
+    // Salary
+    jobDetails.salary = metadataBlock.querySelector('i[name="salary"]')?.parentElement.textContent.replace(/.*Salaire :/i, '').trim() || `${jobData.salary_min} ${jobData.salary_currency || ''}`;
+
+    // Start date
+    jobDetails.startDate = jobData?.start_date || metadataBlock.querySelector('i[name="clock"]')?.parentElement.textContent.replace(/.*Début :/i, '').trim();
+
+    // Remote work
+    jobDetails.remote = metadataBlock.querySelector('i[name="remote"]')?.parentElement.textContent.replace(/.*remote :/i, '').trim() || jobData?.remote;
+
+    // Experience
+    jobDetails.experience = metadataBlock.querySelector('i[name="suitcase"]')?.parentElement.textContent.replace(/.*Expérience :/i, '').trim() || jobData?.experience_level;
+
+    // Education
+    jobDetails.education = metadataBlock.querySelector('i[name="education_level"]')?.parentElement.textContent.replace(/.*Éducation :/i, '').trim() || jobData?.education_level;
+
+    // Extract skills by selecting elements that have a 'length' attribute,
+    // which appears to be used on the skill items.
+    jobDetails.skills = jobData?.tools?.length
+        ? jobData.tools.map(tool => tool.name).join(', ')
+        : Array.from(metadataBlock.querySelectorAll('div[variant="default"][length] span'))
+            .map(el => el.textContent.trim())
+            .join(', ');
+
+    // Job description
+    jobDetails.description = extractDesc('[data-testid="job-section-description"]') || jobData?.description;
+
+    // Profile
+    jobDetails.profile = extractDesc('[data-testid="job-section-experience"]') || jobData?.profile;
+
+    // Recruitment process
+    jobDetails.process = extractDesc('[data-testid="job-section-process"]') || jobData?.recruitment_process;
 
     // Construct the job details string
     let jobDetailsString = '';
