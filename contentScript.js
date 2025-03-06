@@ -70,7 +70,7 @@ function extractText() {
     jobDetails.salary = metadataBlock.querySelector('i[name="salary"]')?.parentElement.textContent.replace(/.*Salaire :/i, '').trim() || `${jobData.salary_min} ${jobData.salary_currency || ''}`;
 
     // Start date
-    jobDetails.startDate = jobData?.start_date || metadataBlock.querySelector('i[name="clock"]')?.parentElement.textContent.replace(/.*Début :/i, '').trim();
+    jobDetails.startDate = metadataBlock.querySelector('i[name="clock"]')?.parentElement.textContent.replace(/.*Début :/i, '').trim() || jobData?.start_date;
 
     // Remote work
     jobDetails.remote = metadataBlock.querySelector('i[name="remote"]')?.parentElement.textContent.replace(/.*remote :/i, '').trim() || jobData?.remote;
