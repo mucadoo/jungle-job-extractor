@@ -1,4 +1,3 @@
-// file: scripts/downloadSnapshots.ts
 import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
@@ -86,7 +85,6 @@ async function processJob(company: string, lang: string, browser: puppeteer.Brow
 
             // Pick random job for variety
             const randomUrl = jobUrls[Math.floor(Math.random() * jobUrls.length)];
-
             const urlObj = new URL(randomUrl);
             // Construct filename from the URL path (e.g., /fr/companies/payfit/jobs/abc -> fr-companies-payfit-jobs-abc)
             const snapshotName = urlObj.pathname
@@ -100,32 +98,37 @@ async function processJob(company: string, lang: string, browser: puppeteer.Brow
 
             await page.goto(randomUrl, { waitUntil: 'networkidle2' });
 
-            // --- Extract only necessary parts ---
+            // --- Robust extraction for Scraper compatibility ---
             const minimalContent = await page.evaluate(() => {
-                const headElements = [
+                const headSelectors = [
                     'script[type="application/ld+json"]',
                     'meta[property="og:title"]',
                     'meta[property="og:url"]',
+                    'meta[property="og:description"]',
                 ];
 
-                const bodyElements = [
+                const bodySelectors = [
                     'h1',
+                    // Main content sections
                     '[data-testid="job-section-description"]',
                     '[data-testid="job-section-profile"]',
                     '[data-testid="job-section-process"]',
-                    // This selector targets the <ul> that typically contains the job metadata <li>s
-                    '[data-testid="job-header-info"] ul',
+                    // Metadata containers (Scraper looks for <li> inside these)
+                    '[data-testid="job-header-info"]',
+                    '.sc-bXCLTC', // Common class for the metadata wrapper if testid fails
+                    'header ul',   // General fallback for the header info list
+                    'time',        // Date posted is often in a <time> tag
                 ];
 
                 let headHtml = '';
-                headElements.forEach(selector => {
+                headSelectors.forEach(selector => {
                     document.querySelectorAll(selector).forEach(el => {
                         headHtml += el.outerHTML + '\n';
                     });
                 });
 
                 let bodyHtml = '';
-                bodyElements.forEach(selector => {
+                bodySelectors.forEach(selector => {
                     document.querySelectorAll(selector).forEach(el => {
                         bodyHtml += el.outerHTML + '\n';
                     });
@@ -135,7 +138,7 @@ async function processJob(company: string, lang: string, browser: puppeteer.Brow
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Minimal Job Snapshot</title>
+    <title>Job Snapshot: ${document.title}</title>
     ${headHtml}
 </head>
 <body>
@@ -173,7 +176,6 @@ async function processJob(company: string, lang: string, browser: puppeteer.Brow
     });
 
     const tasks: Promise<void>[] = [];
-
     for (const company of companies) {
         for (const lang of languages) {
             tasks.push(processJob(company, lang, browser));
@@ -184,7 +186,6 @@ async function processJob(company: string, lang: string, browser: puppeteer.Brow
     for (let i = 0; i < tasks.length; i += MAX_CONCURRENCY) {
         const batch = tasks.slice(i, i + MAX_CONCURRENCY);
         await Promise.allSettled(batch);
-
         if (i + MAX_CONCURRENCY < tasks.length) {
             await new Promise(r => setTimeout(r, 600)); // Be gentle on the server
         }
