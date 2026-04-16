@@ -20,17 +20,21 @@ export interface JobData {
 }
 
 export interface JobDetails {
-    title?: string;
-    company?: string;
-    location?: string;
-    contract?: string;
-    salary?: string;
-    startDate?: string;
-    remote?: string;
-    experience?: string;
-    education?: string;
-    skills?: string;
-    description?: string;
-    profile?: string;
-    process?: string;
+    title?: string | null;
+    company?: string | null;
+    location?: string | null;
+    contractType?: string | null;
+    salary?: string | null;
+    datePosted?: string | null;
+    description?: string | null;
+    profile?: string | null;
+    education?: string | null;
+    experience?: string | null;
+    hiringProcess?: string | null;
+    url?: string | null;
+    // Keep these for backward compatibility if needed by the UI
+    contract?: string | null;
+    startDate?: string | null;
+    remote?: string | null;
+    skills?: string | null;
 }

@@ -95,10 +95,53 @@ async function processJob(company: string, lang: string, browser: puppeteer.Brow
             const filePath = path.join(snapshotsDir, `${snapshotName}.html`);
 
             await page.goto(randomUrl, { waitUntil: 'networkidle2' });
-            const content = await page.content();
 
-            fs.writeFileSync(filePath, content);
-            console.log(`   ✅ Saved ${snapshotName}.html`);
+            // --- Start of modification: Extract only necessary parts ---
+            const minimalContent = await page.evaluate(() => {
+                const headElements = [
+                    'script[type="application/ld+json"]',
+                    'meta[property="og:title"]',
+                    'meta[property="og:url"]',
+                ];
+
+                const bodyElements = [
+                    'h1',
+                    '[data-testid="job-section-description"]',
+                    '[data-testid="job-section-profile"]',
+                    '[data-testid="job-section-process"]',
+                    // This selector targets the <ul> that typically contains the job metadata <li>s
+                    '[data-testid="job-header-info"] ul',
+                ];
+
+                let headHtml = '';
+                headElements.forEach(selector => {
+                    document.querySelectorAll(selector).forEach(el => {
+                        headHtml += el.outerHTML + '\n';
+                    });
+                });
+
+                let bodyHtml = '';
+                bodyElements.forEach(selector => {
+                    document.querySelectorAll(selector).forEach(el => {
+                        bodyHtml += el.outerHTML + '\n';
+                    });
+                });
+
+                return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Minimal Job Snapshot</title>
+    ${headHtml}
+</head>
+<body>
+    ${bodyHtml}
+</body>
+</html>`;
+            });
+
+            fs.writeFileSync(filePath, minimalContent);
+            console.log(`   ✅ Saved minimal snapshot ${snapshotName}.html`);
             return; // Success
 
         } catch (error: any) {
