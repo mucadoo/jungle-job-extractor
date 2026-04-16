@@ -1,45 +1,85 @@
-# Welcome to the Jungle Job Listing Extractor
+# 🌴 WTTJ Job Listing Extractor
 
-## Description
-This Chrome extension is designed to extract and copy job listing details to your clipboard directly from "Welcome To The Jungle" job pages. It streamlines the process of gathering job information for personal tracking or application purposes.
+A robust, modern Chrome Extension (Manifest V3) designed to extract job listing details from **Welcome to the Jungle** with a single click. It automatically formats job titles, salaries, locations, and descriptions into a clean text format and copies them to your clipboard.
 
-## Features
-*   **One-Click Extraction**: Easily extract key job details from any "Welcome to the Jungle" job listing.
-*   **Clipboard Integration**: Automatically copies the extracted information to your clipboard, ready for pasting into your preferred document or spreadsheet.
-*   **Customizable Output (Future Feature)**: Plans to allow users to select which job details to extract and the format of the output.
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/CI/CD-Actions-2088FF?style=flat-square&logo=github-actions&logoColor=white)
 
-## Installation
+## ✨ Features
 
-To install this extension, follow these steps:
+- **One-Click Extraction**: Click the extension icon on any WTTJ job page to copy full details.
+- **Smart i18n Support**: Automatically detects the page language (English, French, or Spanish) and translates the clipboard headers and UI notifications accordingly.
+- **Shadow DOM Isolation**: UI notifications are injected using a Shadow Root to prevent CSS conflicts with the host website.
+- **Robust Data Parsing**: Uses a multi-tier strategy:
+    1. **JSON-LD**: Parses Schema.org metadata for high-accuracy data.
+    2. **Data-TestIDs**: Targeted scraping of WTTJ-specific React components.
+    3. **Semantic Fallback**: Intelligent detection of icons and badges for salary, remote work, and experience levels.
+- **SPA Compatibility**: Dynamically handles internal site navigation where traditional content scripts might fail to load.
+- **Clean Formatting**: Advanced whitespace normalization prevents text merging and preserves readability.
 
-1.  **Download the repository**: Clone or download this repository to your local machine.
-2.  **Open Chrome Extensions**:
-    *   Open Google Chrome.
-    *   Type `chrome://extensions` in the address bar and press Enter.
-    *   Alternatively, click the three-dot menu in the top-right corner, go to "More tools," and then select "Extensions."
-3.  **Enable Developer Mode**: In the top-right corner of the Extensions page, toggle on "Developer mode."
-4.  **Load Unpacked**: Click the "Load unpacked" button that appears.
-5.  **Select the extension folder**: Navigate to and select the directory where you downloaded this repository (the `jungle-job-extractor` folder).
-6.  **Pin the extension (Optional)**: For easy access, click the puzzle piece icon next to your profile avatar in Chrome, find "Welcome to the Jungle Job Listing Extractor," and click the pin icon.
+## 🚀 Getting Started
 
-## Usage
+### Prerequisites
 
-1.  **Navigate to a Job Page**: Go to any job listing page on "Welcome to the Jungle" (e.g., `https://www.welcometothejungle.com/en/companies/.../jobs/...`).
-2.  **Click the Extension Icon**: Click on the "Welcome to the Jungle Job Listing Extractor" icon in your Chrome toolbar.
-3.  **Extract and Copy**: The extension will automatically extract the job details and copy them to your clipboard. A confirmation message might appear (or will be implemented in future versions).
-4.  **Paste**: You can now paste the extracted information into any text editor, spreadsheet, or application.
+- Node.js (v20 or higher)
+- npm
 
-## Contributing
+### Installation
 
-Contributions are welcome! If you have suggestions for improvements, new features, or bug fixes, please feel free to:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-username/jungle-job-extractor.git
+   cd jungle-job-extractor
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Build the project:
+   ```bash
+   npm run build
+   ```
 
-1.  Fork the repository.
-2.  Create a new branch (`git checkout -b feature/YourFeature`).
-3.  Make your changes.
-4.  Commit your changes (`git commit -m 'Add some feature'`).
-5.  Push to the branch (`git push origin feature/YourFeature`).
-6.  Open a Pull Request.
+### Loading into Chrome
 
-## License
+1. Open Chrome and navigate to `chrome://extensions/`.
+2. Enable **Developer mode** (toggle in the top right).
+3. Click **Load unpacked**.
+4. Select the `dist` folder generated by the build command.
 
-This project is open-sourced under the MIT License. See the `LICENSE` file for more details.
+## 🛠 Development
+
+### Available Scripts
+
+- `npm run dev`: Starts Vite in watch mode.
+- `npm run build`: Compiles TypeScript and builds the extension into `/dist`.
+- `npm run test`: Runs the test suite using Vitest and JSDOM.
+- `npm run download-snapshots`: Uses Puppeteer to download real-world job page snapshots for local testing and debugging.
+
+### Tech Stack
+
+- **Bundler**: [Vite](https://vitejs.dev/) with `vite-plugin-static-copy` for manifest management.
+- **Language**: [TypeScript](https://www.typescriptlang.org/) for strict type safety.
+- **Testing**: [Vitest](https://vitest.dev/) for unit testing the extraction logic.
+- **Scraping**: [Puppeteer](https://pptr.dev/) (used only for development/snapshots).
+
+## 🧪 Testing Strategy
+
+The project uses a "Snapshot-Testing" inspired workflow. Real HTML structures from WTTJ are captured using the `download-snapshots` script. These are then used as fixtures in `src/content/extractor.test.ts` to ensure the extractor remains accurate even if WTTJ updates its frontend classes.
+
+## 📦 CI/CD
+
+The project includes a GitHub Actions workflow (`.github/workflows/ci-cd.yml`) that:
+1. Runs linter and type checks.
+2. Executes all Vitest tests.
+3. Automatically builds and packages the extension into a `.zip` file on every push.
+4. Creates a **GitHub Release** when a version tag (e.g., `v1.0.1`) is pushed.
+
+## 📝 License
+
+This project is licensed under the MIT License.
+
+---
+*Disclaimer: This extension is not affiliated with, maintained, authorized, endorsed, or sponsored by Welcome to the Jungle.*

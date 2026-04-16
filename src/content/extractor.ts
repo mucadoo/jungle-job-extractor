@@ -85,14 +85,15 @@ function stripHtmlAndClean(html: string | null | undefined): string | null {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
     
-    // Prevent text merging for block elements (e.g., <div>A</div><div>B</div> -> A\nB instead of AB)
-    const blockElements =['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'section', 'article', 'ul'];
+    // 1. Prevent text merging for block elements
+    const blockElements = ['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'section', 'article', 'ul', 'header'];
     blockElements.forEach(tag => {
         doc.querySelectorAll(tag).forEach(el => {
             el.insertAdjacentText('afterend', '\n');
         });
     });
 
+    // 2. Handle specific formatting tags
     doc.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
     doc.querySelectorAll('li').forEach(li => {
         li.prepend('- ');
@@ -101,10 +102,17 @@ function stripHtmlAndClean(html: string | null | undefined): string | null {
     
     let text = doc.body.textContent || '';
     
-    // Normalize whitespace: collapse multiple spaces/tabs into a single space
+    // 3. Normalize whitespace
+    // Split into lines, trim each line to remove HTML indentation/tabs, then rejoin
+    text = text.split('\n')
+        .map(line => line.trim())
+        .join('\n');
+
+    // Collapse multiple horizontal spaces/tabs into a single space
     text = text.replace(/[ \t\f\v]+/g, ' ');
-    // Collapse multiple newlines into a max of two newlines
-    text = text.replace(/\n\s*\n/g, '\n\n');
+    
+    // Collapse 3+ newlines into exactly two (standard paragraph break)
+    text = text.replace(/\n\s*\n\s*\n/g, '\n\n');
     
     return text.trim() || null;
 }
