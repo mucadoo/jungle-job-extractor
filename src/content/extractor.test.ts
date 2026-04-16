@@ -1,44 +1,66 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { JSDOM } from 'jsdom';
-import { extractTextFromDoc } from './extractor';
-import fs from 'fs';
-import path from 'path';
+import { mapToJobDetails } from './extractor';
+import * as fixtures from './fixtures';
 
-describe('Extractor Snapshots', () => {
-    const snapshotsDir = path.join(__dirname, '../../tests/snapshots');
+describe('Job Extractor - Advanced Fixture Tests', () => {
+    let dom: JSDOM;
 
-    if (!fs.existsSync(snapshotsDir)) {
-        it('should remind the user to download snapshots', () => {
-            console.warn(`Snapshots directory not found at ${snapshotsDir}. Run 'npm run download-snapshots' first.`);
-        });
-        return;
-    }
+    beforeAll(() => {
+        dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
+        global.Node = dom.window.Node;
+    });
 
-    const files = fs.readdirSync(snapshotsDir).filter(file => file.endsWith('.html'));
+    it('should extract English job details from JSON', () => {
+        const result = mapToJobDetails(fixtures.mockJobDataEnglish, null, dom.window.document);
+        expect(result.title).toBe("Native English Linguist");
+        expect(result.company).toBe("Bodyguard");
+        expect(result.location).toBe("Nice");
+    });
 
-    if (files.length === 0) {
-        it('should have snapshots to test', () => {
-            console.warn('No .html snapshots found. Run \'npm run download-snapshots\' first.');
-        });
-    }
+    it('should extract French job details from JSON', () => {
+        const result = mapToJobDetails(fixtures.mockJobDataFrench, null, dom.window.document);
+        expect(result.title).toBe("Customer Relationship Manager");
+        expect(result.salary).toBe("45000 €");
+        expect(result.remote).toBe("2 jours par semaine");
+    });
 
-    files.forEach(file => {
-        it(`should successfully extract data from ${file}`, () => {
-            const html = fs.readFileSync(path.join(snapshotsDir, file), 'utf8');
-            const dom = new JSDOM(html);
-            
-            // Set global Node for the test environment
-            global.Node = dom.window.Node;
+    it('should handle Internships (Practicas) from JSON', () => {
+        const result = mapToJobDetails(fixtures.mockJobDataInternship, null, dom.window.document);
+        expect(result.title).toBe("Product Builder Intern");
+        expect(result.contract).toBe("Stage / Practicas");
+    });
 
-            const result = extractTextFromDoc(dom.window.document);
-            
-            expect(result).toBeTruthy();
-            expect(typeof result).toBe('string');
-            expect(result, `Snapshot ${file} is missing Title`).toContain('Title:');
-            expect(result, `Snapshot ${file} is missing Company`).toContain('Company:');
-        });
+    it('should handle Spontaneous Applications with minimal data', () => {
+        const result = mapToJobDetails(fixtures.mockJobDataSpontaneous, null, dom.window.document);
+        expect(result.title).toBe("Candidature Spontanée");
+        expect(result.description).toBeUndefined();
+    });
+
+    it('should extract from English HTML Metadata (Fallback)', () => {
+        const testDom = new JSDOM(`<!DOCTYPE html><html><body>${fixtures.mockMetadataHTMLEnglish}</body></html>`);
+        const metadataBlock = testDom.window.document.querySelector('[data-testid="job-metadata-block"]');
+        
+        const result = mapToJobDetails(null, metadataBlock, testDom.window.document);
+        
+        expect(result.title).toBe("Sales Development Representative");
+        expect(result.location).toBe("Barcelona");
+        expect(result.salary).toBe("30k - 40k EUR");
+        expect(result.startDate).toBe("ASAP");
+    });
+
+    it('should extract from French HTML Metadata (Fallback)', () => {
+        const testDom = new JSDOM(`<!DOCTYPE html><html><body>${fixtures.mockMetadataHTMLFrench}</body></html>`);
+        const metadataBlock = testDom.window.document.querySelector('[data-testid="job-metadata-block"]');
+        
+        const result = mapToJobDetails(null, metadataBlock, testDom.window.document);
+        
+        expect(result.title).toBe("Chargé de Clientèle");
+        expect(result.location).toBe("Paris");
+        expect(result.salary).toBe("40 000 € par an");
+        expect(result.experience).toBe("> 2 ans");
     });
 });

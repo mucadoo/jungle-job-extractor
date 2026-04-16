@@ -1,9 +1,7 @@
 import { JobData, JobDetails } from '../types';
 
 export function replaceLineBreaks(node: Node): string {
-    // Check if we are in a JSDOM/Browser environment where Node is defined
     const TEXT_NODE = typeof Node !== 'undefined' ? Node.TEXT_NODE : 3;
-
     if (node.nodeType === TEXT_NODE) {
         return node.textContent?.trim() + ' ' || '';
     }
@@ -26,6 +24,57 @@ export function extractDesc(root: ParentNode, selector: string): string {
     return replaceLineBreaks(clone).trim();
 }
 
+/**
+ * The core mapping logic. 
+ * This is what we test against mock data.
+ */
+export function mapToJobDetails(jobData: JobData | null, metadataBlock: Element | null, doc: ParentNode): JobDetails {
+    const getMetadataValue = (iconName: string, regexToRemove?: RegExp) => {
+        const icon = metadataBlock?.querySelector(`i[name="${iconName}"]`);
+        let text = icon?.parentElement?.textContent?.trim() || '';
+        if (regexToRemove) text = text.replace(regexToRemove, '').trim();
+        return text || undefined;
+    };
+
+    const details: JobDetails = {
+        title: jobData?.name || metadataBlock?.querySelector('h2')?.textContent?.trim(),
+        company: jobData?.organization?.name || metadataBlock?.querySelector('a span')?.textContent?.trim(),
+        location: getMetadataValue('location', /.*location/i) || jobData?.office?.city,
+        contract: getMetadataValue('contract') || jobData?.contract_type,
+        salary: getMetadataValue('salary', /.*(Salaire|Salary)\s*:/i) || (jobData?.salary_min ? `${jobData.salary_min} ${jobData.salary_currency || ''}` : undefined),
+        startDate: getMetadataValue('clock', /.*(Début|Start)\s*:/i) || jobData?.start_date,
+        remote: getMetadataValue('remote', /.*remote\s*:/i) || jobData?.remote,
+        experience: getMetadataValue('suitcase', /.*(Expérience|Experience)\s*:/i) || jobData?.experience_level,
+        education: getMetadataValue('education_level', /.*(Éducation|Education)\s*:/i) || jobData?.education_level,
+        skills: jobData?.tools?.length 
+            ? jobData.tools.map(tool => tool.name).join(', ') 
+            : Array.from(metadataBlock?.querySelectorAll('div[variant="default"][length] span') || []).map(el => el.textContent?.trim()).join(', '),
+        description: extractDesc(doc, '[data-testid="job-section-description"]') || jobData?.description,
+        profile: extractDesc(doc, '[data-testid="job-section-experience"]') || jobData?.profile,
+        process: extractDesc(doc, '[data-testid="job-section-process"]') || jobData?.recruitment_process
+    };
+
+    return details;
+}
+
+export function formatJobDetails(details: JobDetails): string {
+    let res = '';
+    if (details.title) res += `Title: ${details.title}\n`;
+    if (details.company) res += `Company: ${details.company}\n`;
+    if (details.location) res += `Location: ${details.location}\n`;
+    if (details.contract) res += `Contract Type: ${details.contract}\n`;
+    if (details.salary) res += `Salary: ${details.salary}\n`;
+    if (details.startDate) res += `Start Date: ${details.startDate}\n`;
+    if (details.remote) res += `Remote: ${details.remote}\n`;
+    if (details.experience) res += `Experience: ${details.experience}\n`;
+    if (details.education) res += `Education: ${details.education}\n`;
+    if (details.skills) res += `Required Skills: ${details.skills}\n`;
+    if (details.description) res += `\nJob Description:\n${details.description}\n`;
+    if (details.profile) res += `\nDesired Profile:\n${details.profile}\n`;
+    if (details.process) res += `\nInterview Process:\n${details.process}\n`;
+    return res.trim();
+}
+
 export function extractTextFromDoc(doc: Document): string {
     const scripts = doc.getElementsByTagName("script");
     const metadataBlock = doc.querySelector('[data-testid="job-metadata-block"]');
@@ -38,45 +87,12 @@ export function extractTextFromDoc(doc: Document): string {
             if (match) {
                 try {
                     jobData = JSON.parse(JSON.parse(`"${match[1]}"`)).queries[0].state.data;
-                } catch (e) {
-                    console.error("Failed to parse INITIAL_DATA", e);
-                }
+                } catch (e) { console.error("Failed to parse INITIAL_DATA", e); }
                 break;
             }
         }
     }
 
-    const jobDetails: JobDetails = {
-        title: jobData?.name || metadataBlock?.querySelector('h2')?.textContent?.trim(),
-        company: jobData?.organization?.name || metadataBlock?.querySelector('a span')?.textContent?.trim(),
-        location: (metadataBlock?.querySelector('i[name="location"]')?.parentElement?.textContent?.replace(/.*location/i, '').trim()) || jobData?.office?.city,
-        contract: (metadataBlock?.querySelector('i[name="contract"]')?.parentElement?.textContent?.trim()) || jobData?.contract_type,
-        salary: (metadataBlock?.querySelector('i[name="salary"]')?.parentElement?.textContent?.replace(/.*Salaire :/i, '').trim()) || (jobData?.salary_min ? `${jobData.salary_min} ${jobData.salary_currency || ''}` : undefined),
-        startDate: (metadataBlock?.querySelector('i[name="clock"]')?.parentElement?.textContent?.replace(/.*Début :/i, '').trim()) || jobData?.start_date,
-        remote: (metadataBlock?.querySelector('i[name="remote"]')?.parentElement?.textContent?.replace(/.*remote :/i, '').trim()) || jobData?.remote,
-        experience: (metadataBlock?.querySelector('i[name="suitcase"]')?.parentElement?.textContent?.replace(/.*Expérience :/i, '').trim()) || jobData?.experience_level,
-        education: (metadataBlock?.querySelector('i[name="education_level"]')?.parentElement?.textContent?.replace(/.*Éducation :/i, '').trim()) || jobData?.education_level,
-        skills: jobData?.tools?.length 
-            ? jobData.tools.map(tool => tool.name).join(', ') 
-            : Array.from(metadataBlock?.querySelectorAll('div[variant="default"][length] span') || []).map(el => el.textContent?.trim()).join(', '),
-        description: extractDesc(doc, '[data-testid="job-section-description"]') || jobData?.description,
-        profile: extractDesc(doc, '[data-testid="job-section-experience"]') || jobData?.profile,
-        process: extractDesc(doc, '[data-testid="job-section-process"]') || jobData?.recruitment_process
-    };
-
-    let res = '';
-    if (jobDetails.title) res += `Title: ${jobDetails.title}\n`;
-    if (jobDetails.company) res += `Company: ${jobDetails.company}\n`;
-    if (jobDetails.location) res += `Location: ${jobDetails.location}\n`;
-    if (jobDetails.contract) res += `Contract Type: ${jobDetails.contract}\n`;
-    if (jobDetails.salary) res += `Salary: ${jobDetails.salary}\n`;
-    if (jobDetails.startDate) res += `Start Date: ${jobDetails.startDate}\n`;
-    if (jobDetails.remote) res += `Remote: ${jobDetails.remote}\n`;
-    if (jobDetails.experience) res += `Experience: ${jobDetails.experience}\n`;
-    if (jobDetails.education) res += `Education: ${jobDetails.education}\n`;
-    if (jobDetails.skills) res += `Required Skills: ${jobDetails.skills}\n`;
-    if (jobDetails.description) res += `\nJob Description:\n${jobDetails.description}\n`;
-    if (jobDetails.profile) res += `\nDesired Profile:\n${jobDetails.profile}\n`;
-    if (jobDetails.process) res += `\nInterview Process:\n${jobDetails.process}\n`;
-    return res.trim();
+    const details = mapToJobDetails(jobData, metadataBlock, doc);
+    return formatJobDetails(details);
 }
