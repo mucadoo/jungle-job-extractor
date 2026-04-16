@@ -4,20 +4,38 @@ function isValidUrl(url: string | undefined): boolean {
     return pattern.test(url);
 }
 
-chrome.action.onClicked.addListener((tab) => {
+chrome.action.onClicked.addListener(async (tab) => {
+    if (tab.id === undefined) return;
+
     if (isValidUrl(tab.url)) {
-        if (tab.id !== undefined) {
-            chrome.tabs.sendMessage(tab.id, { type: 'executeScript' });
+        try {
+            // Attempt to send the message
+            await chrome.tabs.sendMessage(tab.id, { type: 'executeScript' });
+        } catch (error) {
+            // If it fails, the content script likely isn't injected due to SPA navigation.
+            // Let's inject it dynamically.
+            try {
+                await chrome.scripting.insertCSS({
+                    target: { tabId: tab.id },
+                    files: ['src/content/style.css']
+                });
+                await chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    files: ['src/content/content.js']
+                });
+                // Retry sending the message
+                await chrome.tabs.sendMessage(tab.id, { type: 'executeScript' });
+            } catch (injectError) {
+                console.error("Failed to inject content scripts:", injectError);
+            }
         }
-    } else if (tab.id !== undefined) {
-        // Send a message to the content script to show a toast instead of using alert()
-        chrome.tabs.sendMessage(tab.id, { 
-            type: 'showToast', 
-            message: 'Current page isn\'t a job listing on Welcome To The Jungle.' 
-        }).catch(() => {
-            // If the content script is not loaded (e.g. on a non-WTTJ page), we can't show the toast.
-            // In a real scenario, you might want to inject the content script here.
-            console.warn("Content script not loaded on this page.");
-        });
+    } else {
+        // Content script isn't loaded here. Execute a minimal script for feedback.
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                alert("This extension only works on Welcome To The Jungle job listings.");
+            }
+        }).catch(err => console.error("Scripting error:", err));
     }
 });

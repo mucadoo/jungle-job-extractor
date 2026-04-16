@@ -23,13 +23,29 @@ function stripHtmlAndClean(html: string | null | undefined): string | null {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
     
-    // Replace structural elements to preserve readability
+    // Ensure block elements don't merge text together
+    const blockElements =['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'section', 'article'];
+    blockElements.forEach(tag => {
+        doc.querySelectorAll(tag).forEach(el => {
+            el.insertAdjacentText('afterend', '\n');
+        });
+    });
+
     doc.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
-    doc.querySelectorAll('li').forEach(li => li.prepend('- '));
+    doc.querySelectorAll('li').forEach(li => {
+        li.prepend('- ');
+        li.insertAdjacentText('afterend', '\n');
+    });
     
-    // Normalize any sequence of whitespace (newlines, tabs, spaces, non-breaking spaces) to a single space
-    // Note: \s includes \n, \r, \t, \f, \v and the Unicode space characters
-    return doc.body.textContent?.replace(/\s+/g, ' ').trim() || null;
+    // Clean up multiple spaces, but preserve intentional newlines
+    let text = doc.body.textContent || '';
+    
+    // Replace multiple spaces/tabs with a single space
+    text = text.replace(/[ \t\f\v]+/g, ' ');
+    // Replace multiple newlines with a max of two newlines
+    text = text.replace(/\n\s*\n/g, '\n\n');
+    
+    return text.trim() || null;
 }
 
 /**
@@ -83,7 +99,17 @@ export function extractJobDetails(doc: Document): JobDetails {
                 jobDetails.title = jobPosting.title || null;
                 jobDetails.company = jobPosting.hiringOrganization?.name || null;
                 jobDetails.description = jobPosting.description || null;
-                jobDetails.datePosted = jobPosting.datePosted || null;
+                
+                if (jobPosting.datePosted) {
+                    try {
+                        const date = new Date(jobPosting.datePosted);
+                        // Formats to "YYYY-MM-DD"
+                        jobDetails.datePosted = date.toISOString().split('T')[0]; 
+                    } catch {
+                        jobDetails.datePosted = jobPosting.datePosted || null;
+                    }
+                }
+
                 jobDetails.contractType = jobPosting.employmentType || null;
 
                 if (jobPosting.jobLocation) {
