@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 const languages = ['fr', 'en', 'es'] as const;
 
-// Updated reliable companies (verified to exist with active job pages)
+// Reliable companies with usually good job variety (2026)
 const companies = [
     'payfit',
     'doctolib',
