@@ -1,8 +1,19 @@
 import { JobDetails } from '../types';
 
+interface SchemaJobPosting {
+    '@type'?: string;
+    title?: string;
+    hiringOrganization?: { name?: string };
+    description?: string;
+    datePosted?: string;
+    employmentType?: string;
+    jobLocation?: any; // Can be further typed if needed (Place/PostalAddress)
+    url?: string;
+}
+
 /**
  * Strips HTML tags from a string and cleans up whitespace.
- * Uses DOMParser for safer HTML parsing.
+ * Uses DOMParser for safer HTML parsing and robust whitespace normalization.
  * @param html The HTML string to clean.
  * @returns Cleaned plain text.
  */
@@ -12,10 +23,13 @@ function stripHtmlAndClean(html: string | null | undefined): string | null {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
     
+    // Replace structural elements to preserve readability
     doc.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
     doc.querySelectorAll('li').forEach(li => li.prepend('- '));
     
-    return doc.body.textContent?.replace(/\s\s+/g, ' ').trim() || null;
+    // Normalize any sequence of whitespace (newlines, tabs, spaces, non-breaking spaces) to a single space
+    // Note: \s includes \n, \r, \t, \f, \v and the Unicode space characters
+    return doc.body.textContent?.replace(/\s+/g, ' ').trim() || null;
 }
 
 /**
@@ -52,15 +66,17 @@ export function extractJobDetails(doc: Document): JobDetails {
             if (!scriptContent) return;
 
             const data = JSON.parse(scriptContent);
-            let schemas: any[] = [];
+            let schemas: SchemaJobPosting[] = [];
+            
+            // Handle cases where schemas are nested inside a @graph array
             if (data['@graph']) {
-                schemas = data['@graph'];
+                schemas = data['@graph'] as SchemaJobPosting[];
             } else if (Array.isArray(data)) {
-                schemas = data;
+                schemas = data as SchemaJobPosting[];
             } else {
-                schemas = [data];
+                schemas = [data as SchemaJobPosting];
             }
-
+            
             const jobPosting = schemas.find(schema => schema['@type'] === 'JobPosting');
 
             if (jobPosting) {
@@ -75,9 +91,10 @@ export function extractJobDetails(doc: Document): JobDetails {
                         ? jobPosting.jobLocation[0]
                         : jobPosting.jobLocation;
 
+                    // Support different Schema.org location formats
                     jobDetails.location = loc?.address?.addressLocality
                                        || loc?.address?.addressRegion
-                                       || null;
+                                       || (typeof loc?.name === 'string' ? loc.name : null);
                 }
                 jobDetails.url = jobPosting.url || null;
             }
@@ -127,7 +144,6 @@ export function extractJobDetails(doc: Document): JobDetails {
 
         // Experience Detection (e.g. "> 2 years", "Intermediate")
         if (lowerText.includes('expér') || lowerText.includes('year') || lowerText.includes('ans')) {
-            // Ensure we aren't picking up random text by checking if it contains numbers or specific exp keywords
             if (/\d/.test(text) || lowerText.includes('junior') || lowerText.includes('senior')) {
                 jobDetails.experience = text;
             }
@@ -144,11 +160,10 @@ export function extractJobDetails(doc: Document): JobDetails {
         jobDetails.url = doc.querySelector('meta[property="og:url"]')?.getAttribute('content') || null;
     }
 
-    // Final cleanup: ensure description is plain text
+    // Final cleanup: ensure all long text fields are properly normalized
     jobDetails.description = stripHtmlAndClean(jobDetails.description);
     jobDetails.profile = stripHtmlAndClean(jobDetails.profile);
     jobDetails.hiringProcess = stripHtmlAndClean(jobDetails.hiringProcess);
-
 
     return jobDetails;
 }
@@ -159,20 +174,23 @@ export function extractJobDetails(doc: Document): JobDetails {
  * @returns A formatted string of job details.
  */
 export function formatJobDetails(details: JobDetails): string {
-    let res = '';
-    if (details.title) res += `Title: ${details.title}\n`;
-    if (details.company) res += `Company: ${details.company}\n`;
-    if (details.location) res += `Location: ${details.location}\n`;
-    if (details.contractType) res += `Contract Type: ${details.contractType}\n`;
-    if (details.salary) res += `Salary: ${details.salary}\n`;
-    if (details.datePosted) res += `Date Posted: ${details.datePosted}\n`;
-    if (details.experience) res += `Experience: ${details.experience}\n`;
-    if (details.education) res += `Education: ${details.education}\n`;
-    if (details.url) res += `URL: ${details.url}\n`;
-    if (details.description) res += `\nJob Description:\n${details.description}\n`;
-    if (details.profile) res += `\nDesired Profile:\n${details.profile}\n`;
-    if (details.hiringProcess) res += `\nInterview Process:\n${details.hiringProcess}\n`;
-    return res.trim();
+    const sections: string[] = [];
+
+    if (details.title) sections.push(`Title: ${details.title}`);
+    if (details.company) sections.push(`Company: ${details.company}`);
+    if (details.location) sections.push(`Location: ${details.location}`);
+    if (details.contractType) sections.push(`Contract Type: ${details.contractType}`);
+    if (details.salary) sections.push(`Salary: ${details.salary}`);
+    if (details.datePosted) sections.push(`Date Posted: ${details.datePosted}`);
+    if (details.experience) sections.push(`Experience: ${details.experience}`);
+    if (details.education) sections.push(`Education: ${details.education}`);
+    if (details.url) sections.push(`URL: ${details.url}`);
+    
+    if (details.description) sections.push(`\nJob Description:\n${details.description}`);
+    if (details.profile) sections.push(`\nDesired Profile:\n${details.profile}`);
+    if (details.hiringProcess) sections.push(`\nInterview Process:\n${details.hiringProcess}`);
+
+    return sections.join('\n').trim();
 }
 
 /**

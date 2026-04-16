@@ -31,13 +31,12 @@ const MAX_CONCURRENCY = 5;   // Stable value — increase to 6-8 if your connect
 const MAX_RETRIES = 2;
 const snapshotsDir = path.join(__dirname, '../tests/snapshots');
 
-// --- Start of modification: Clean snapshots directory ---
+// Clean snapshots directory
 if (fs.existsSync(snapshotsDir)) {
     console.log(`🧹 Cleaning old snapshots in ${snapshotsDir}...`);
     fs.rmSync(snapshotsDir, { recursive: true, force: true });
 }
 fs.mkdirSync(snapshotsDir, { recursive: true });
-// --- End of modification ---
 
 async function scrollToLoadJobs(page: puppeteer.Page) {
     for (let i = 0; i < 6; i++) {
@@ -98,13 +97,14 @@ async function processJob(company: string, lang: string, browser: puppeteer.Brow
 
             await page.goto(randomUrl, { waitUntil: 'networkidle2' });
 
-            // --- Robust extraction for Scraper compatibility ---
+            // Robust extraction for Scraper compatibility
             const minimalContent = await page.evaluate(() => {
                 const headSelectors = [
                     'script[type="application/ld+json"]',
                     'meta[property="og:title"]',
                     'meta[property="og:url"]',
                     'meta[property="og:description"]',
+                    'meta[name="description"]', // Fallback description
                 ];
 
                 const bodySelectors = [
@@ -138,7 +138,7 @@ async function processJob(company: string, lang: string, browser: puppeteer.Brow
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Job Snapshot: ${document.title}</title>
+    <title>Job Snapshot</title>
     ${headHtml}
 </head>
 <body>
