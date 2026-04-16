@@ -6,13 +6,20 @@
   "scripts": {
     "dev": "vite build --watch",
     "build": "tsc && vite build",
-    "download-snapshots": "node scripts/downloadSnapshots.cjs"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "download-snapshots": "tsx scripts/downloadSnapshots.ts",
+    "package": "npm run build && zip -r extension.zip dist/*"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.246",
+    "@types/node": "^20.5.9",
+    "jsdom": "^22.1.0",
+    "tsx": "^3.12.7",
     "typescript": "^5.2.2",
     "vite": "^4.4.9",
-    "vite-plugin-static-copy": "^0.17.0"
+    "vite-plugin-static-copy": "^0.17.0",
+    "vitest": "^0.34.4"
   },
   "dependencies": {
     "puppeteer": "^21.0.0"
