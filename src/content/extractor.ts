@@ -1,7 +1,10 @@
 import { JobData, JobDetails } from '../types';
 
 export function replaceLineBreaks(node: Node): string {
-    if (node.nodeType === Node.TEXT_NODE) {
+    // Check if we are in a JSDOM/Browser environment where Node is defined
+    const TEXT_NODE = typeof Node !== 'undefined' ? Node.TEXT_NODE : 3;
+
+    if (node.nodeType === TEXT_NODE) {
         return node.textContent?.trim() + ' ' || '';
     }
     let text = '';
