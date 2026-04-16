@@ -2,20 +2,20 @@ import { JobDetails } from '../types';
 
 /**
  * Strips HTML tags from a string and cleans up whitespace.
+ * Uses DOMParser for safer HTML parsing.
  * @param html The HTML string to clean.
  * @returns Cleaned plain text.
  */
 function stripHtmlAndClean(html: string | null | undefined): string | null {
     if (!html) return null;
-    // Create a temporary div to parse HTML and get text content
-    const div = document.createElement('div');
-    div.innerHTML = html;
-    // Replace <br> with newlines for better readability
-    div.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
-    // Replace <li> with - for list formatting
-    div.querySelectorAll('li').forEach(li => li.prepend('- '));
-    // Get text content, then clean up multiple spaces and newlines
-    return div.textContent?.replace(/\s\s+/g, ' ').trim() || null;
+    
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    
+    doc.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+    doc.querySelectorAll('li').forEach(li => li.prepend('- '));
+    
+    return doc.body.textContent?.replace(/\s\s+/g, ' ').trim() || null;
 }
 
 /**
@@ -52,7 +52,15 @@ export function extractJobDetails(doc: Document): JobDetails {
             if (!scriptContent) return;
 
             const data = JSON.parse(scriptContent);
-            const schemas = Array.isArray(data) ? data : [data];
+            let schemas: any[] = [];
+            if (data['@graph']) {
+                schemas = data['@graph'];
+            } else if (Array.isArray(data)) {
+                schemas = data;
+            } else {
+                schemas = [data];
+            }
+
             const jobPosting = schemas.find(schema => schema['@type'] === 'JobPosting');
 
             if (jobPosting) {

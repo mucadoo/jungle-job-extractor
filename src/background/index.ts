@@ -10,12 +10,14 @@ chrome.action.onClicked.addListener((tab) => {
             chrome.tabs.sendMessage(tab.id, { type: 'executeScript' });
         }
     } else if (tab.id !== undefined) {
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: (msg: string) => {
-                alert(msg);
-            },
-            args: ['Current page isn\'t a job listing on Welcome To The Jungle.']
-        }).catch(err => console.error("Could not execute script", err));
+        // Send a message to the content script to show a toast instead of using alert()
+        chrome.tabs.sendMessage(tab.id, { 
+            type: 'showToast', 
+            message: 'Current page isn\'t a job listing on Welcome To The Jungle.' 
+        }).catch(() => {
+            // If the content script is not loaded (e.g. on a non-WTTJ page), we can't show the toast.
+            // In a real scenario, you might want to inject the content script here.
+            console.warn("Content script not loaded on this page.");
+        });
     }
 });

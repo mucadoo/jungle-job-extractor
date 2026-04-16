@@ -1,85 +1,73 @@
-import { JobData } from '../types';
-
 /**
  * REPRESENTATIVE TEST CASES DISTILLED FROM SNAPSHOTS
  * These fixtures represent real-world variations observed in Welcome to the Jungle job pages.
  */
 
-// 1. Standard Full Job (English / International)
-export const mockJobDataEnglish: JobData = {
-    name: "Native English Linguist",
-    organization: { name: "Bodyguard" },
-    contract_type: "Permanent (CDI)",
-    office: { city: "Nice" },
-    salary_min: 35000,
-    salary_currency: "EUR",
-    start_date: "ASAP",
-    remote: "Partial",
-    experience_level: "2+ years",
-    education_level: "Master's Degree",
-    tools: [{ name: "Translation" }, { name: "Localization" }],
-    description: "Help us protect people online.",
-    profile: "English is your mother tongue.",
-    recruitment_process: "1. Phone screen\n2. Technical test"
-};
-
-// 2. French Market Specifics (Salary in French, Specific labels)
-export const mockJobDataFrench: JobData = {
-    name: "Customer Relationship Manager",
-    organization: { name: "PayFit" },
-    contract_type: "CDI",
-    office: { city: "Paris" },
-    salary_min: 45000,
-    salary_currency: "€",
-    start_date: "Janvier 2024",
-    remote: "2 jours par semaine",
-    experience_level: "Junior",
-    tools: [{ name: "Salesforce" }, { name: "Zendesk" }],
-    description: "Accompagnez nos clients."
-};
-
-// 3. Internship / Practicas (Spanish label influence)
-export const mockJobDataInternship: JobData = {
-    name: "Product Builder Intern",
-    organization: { name: "PayFit" },
-    contract_type: "Stage / Practicas",
-    office: { city: "Barcelona" },
-    start_date: "Immediate",
-    tools: [{ name: "No-code" }, { name: "Bubble" }]
-};
-
-// 4. Spontaneous Application (Candidatures Spontanées) - Often missing description/salary
-export const mockJobDataSpontaneous: JobData = {
-    name: "Candidature Spontanée",
-    organization: { name: "Bodyguard" },
-    contract_type: "Various",
-    office: { city: "Remote" }
-};
-
-// 5. Raw HTML Snippets for testing the DOM-based fallback (Scraper)
-export const mockMetadataHTMLEnglish = `
-    <div data-testid="job-metadata-block">
-        <h2>Sales Development Representative</h2>
-        <a href="#"><span>Tech Corp</span></a>
-        <div><i name="location"></i>Location: Barcelona</div>
-        <div><i name="contract"></i>Permanent Contract</div>
-        <div><i name="salary"></i>Salary: 30k - 40k EUR</div>
-        <div><i name="clock"></i>Start: ASAP</div>
-        <div><i name="remote"></i>Remote: Partial</div>
-        <div variant="default" length="1"><span>Sales</span></div>
-    </div>
-    <div data-testid="job-section-description"><h4>The Role</h4><p>Sell amazing products.</p></div>
+// 1. JSON-LD with @graph (Modern WTTJ structure)
+export const mockJsonLdWithGraph = `
+<!DOCTYPE html>
+<html>
+<head>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "JobPosting",
+          "title": "Software Engineer",
+          "hiringOrganization": { "@type": "Organization", "name": "Tech Co" },
+          "jobLocation": { "@type": "Place", "address": { "@type": "PostalAddress", "addressLocality": "Paris" } },
+          "datePosted": "2024-03-20",
+          "employmentType": "FULL_TIME",
+          "description": "Develop great software.",
+          "url": "https://www.welcometothejungle.com/fr/companies/tech-co/jobs/software-engineer"
+        }
+      ]
+    }
+    </script>
+</head>
+<body></body>
+</html>
 `;
 
-export const mockMetadataHTMLFrench = `
-    <div data-testid="job-metadata-block">
-        <h2>Chargé de Clientèle</h2>
-        <a href="#"><span>Société Géniale</span></a>
-        <div><i name="location"></i>Lieu: Paris</div>
-        <div><i name="contract"></i>CDI</div>
-        <div><i name="salary"></i>Salaire : 40 000 € par an</div>
-        <div><i name="clock"></i>Début : Dès que possible</div>
-        <div><i name="suitcase"></i>Expérience : > 2 ans</div>
+// 2. Standard Metadata Badges (Fallback)
+export const mockMetadataHTML = `
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>Senior Product Designer</h1>
+    <div data-testid="job-header-info">
+        <ul>
+            <li><i name="location"></i>Paris, France</li>
+            <li><i name="contract"></i>CDI</li>
+            <li><i name="salary"></i>55k - 70k €</li>
+            <li><i name="remote"></i>Télétravail ponctuel</li>
+            <li><i name="suitcase"></i>Expérience : > 5 ans</li>
+            <li><i name="education_level"></i>Bac +5 / Master</li>
+        </ul>
     </div>
-    <div data-testid="job-section-description"><h4>Description du poste</h4><p>Rejoignez-nous !</p></div>
+    <meta property="og:title" content="Senior Product Designer - Creative Studio">
+    <meta property="og:url" content="https://www.welcometothejungle.com/fr/companies/creative-studio/jobs/designer">
+    
+    <div data-testid="job-section-description">
+        <h4>Job Description</h4>
+        <p>Join our creative team.</p>
+    </div>
+    <div data-testid="job-section-profile">
+        <h4>Profile</h4>
+        <p>You have 5 years of experience.</p>
+    </div>
+</body>
+</html>
+`;
+
+// 3. Minimal Case
+export const mockMinimalHTML = `
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>Candidature Spontanée</h1>
+    <meta property="og:title" content="Candidature Spontanée - Bodyguard">
+</body>
+</html>
 `;

@@ -1,24 +1,3 @@
-export interface JobData {
-    name?: string;
-    organization?: {
-        name: string;
-    };
-    contract_type?: string;
-    office?: {
-        city: string;
-    };
-    salary_min?: number;
-    salary_currency?: string;
-    start_date?: string;
-    remote?: string;
-    experience_level?: string;
-    education_level?: string;
-    tools?: Array<{ name: string }>;
-    description?: string;
-    profile?: string;
-    recruitment_process?: string;
-}
-
 export interface JobDetails {
     title?: string | null;
     company?: string | null;
