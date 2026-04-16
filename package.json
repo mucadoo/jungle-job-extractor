@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "vite build --watch",
     "build": "tsc && vite build",
-    "test": "vitest run",
+    "test": "vitest run --exclude src/content/live.test.ts",
+    "test:live": "vitest run src/content/live.test.ts",
     "test:watch": "vitest",
     "download-snapshots": "tsx scripts/downloadSnapshots.ts",
     "package": "npm run build && zip -r extension.zip dist/*",
