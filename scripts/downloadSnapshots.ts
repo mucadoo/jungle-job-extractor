@@ -32,9 +32,13 @@ const MAX_CONCURRENCY = 5;   // Stable value — increase to 6-8 if your connect
 const MAX_RETRIES = 2;
 const snapshotsDir = path.join(__dirname, '../tests/snapshots');
 
-if (!fs.existsSync(snapshotsDir)) {
-    fs.mkdirSync(snapshotsDir, { recursive: true });
+// --- Start of modification: Clean snapshots directory ---
+if (fs.existsSync(snapshotsDir)) {
+    console.log(`🧹 Cleaning old snapshots in ${snapshotsDir}...`);
+    fs.rmSync(snapshotsDir, { recursive: true, force: true });
 }
+fs.mkdirSync(snapshotsDir, { recursive: true });
+// --- End of modification ---
 
 async function scrollToLoadJobs(page: puppeteer.Page) {
     for (let i = 0; i < 6; i++) {
@@ -96,7 +100,7 @@ async function processJob(company: string, lang: string, browser: puppeteer.Brow
 
             await page.goto(randomUrl, { waitUntil: 'networkidle2' });
 
-            // --- Start of modification: Extract only necessary parts ---
+            // --- Extract only necessary parts ---
             const minimalContent = await page.evaluate(() => {
                 const headElements = [
                     'script[type="application/ld+json"]',
