@@ -36,15 +36,15 @@ if (!fs.existsSync(snapshotsDir)) {
     fs.mkdirSync(snapshotsDir, { recursive: true });
 }
 
-async function scrollToLoadJobs(page: any) {
+async function scrollToLoadJobs(page: puppeteer.Page) {
     for (let i = 0; i < 6; i++) {
         await page.evaluate(() => window.scrollBy(0, window.innerHeight * 0.8));
         await new Promise(r => setTimeout(r, 700));
     }
 }
 
-async function processJob(company: string, lang: string, browser: any): Promise<void> {
-    let page: any = null;
+async function processJob(company: string, lang: string, browser: puppeteer.Browser): Promise<void> {
+    let page: puppeteer.Page | null = null;
     let attempts = 0;
 
     while (attempts <= MAX_RETRIES) {
@@ -84,10 +84,14 @@ async function processJob(company: string, lang: string, browser: any): Promise<
             const randomUrl = jobUrls[Math.floor(Math.random() * jobUrls.length)];
 
             const urlObj = new URL(randomUrl);
-            let slug = urlObj.pathname.split('/jobs/')[1] || 'unknown';
-            slug = slug.split('_PAYFI_')[0].replace(/[^a-z0-9-_]/gi, '-');
+            // Construct filename from the URL path (e.g., /fr/companies/payfit/jobs/abc -> fr-companies-payfit-jobs-abc)
+            const snapshotName = urlObj.pathname
+                .replace(/^\//, '')          // Remove leading slash
+                .replace(/[^a-z0-9]/gi, '-') // Replace non-alphanumeric characters with hyphens
+                .replace(/-+/g, '-')         // Collapse multiple hyphens
+                .replace(/-$/, '')           // Remove trailing hyphen
+                || 'index';
 
-            const snapshotName = `${company}-${lang}-${slug}`;
             const filePath = path.join(snapshotsDir, `${snapshotName}.html`);
 
             await page.goto(randomUrl, { waitUntil: 'networkidle2' });
