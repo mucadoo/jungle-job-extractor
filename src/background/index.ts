@@ -9,28 +9,27 @@ chrome.action.onClicked.addListener(async (tab) => {
 
     if (isValidUrl(tab.url)) {
         try {
-            // Attempt to send the message
+            // Attempt to trigger the content script
             await chrome.tabs.sendMessage(tab.id, { type: 'executeScript' });
         } catch (error) {
-            // If it fails, the content script likely isn't injected due to SPA navigation.
-            // Let's inject it dynamically.
+            // If the content script is missing (due to SPA navigation routing), inject it manually
             try {
                 await chrome.scripting.insertCSS({
                     target: { tabId: tab.id },
-                    files: ['src/content/style.css']
+                    files:['src/content/style.css']
                 });
                 await chrome.scripting.executeScript({
                     target: { tabId: tab.id },
-                    files: ['src/content/content.js']
+                    files: ['src/content/content.js'] // Vite path mapping
                 });
-                // Retry sending the message
+                // Try again after injection
                 await chrome.tabs.sendMessage(tab.id, { type: 'executeScript' });
             } catch (injectError) {
                 console.error("Failed to inject content scripts:", injectError);
             }
         }
     } else {
-        // Content script isn't loaded here. Execute a minimal script for feedback.
+        // Fallback alert using injection when not on a WTTJ page (content script isn't available)
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {

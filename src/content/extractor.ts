@@ -1,5 +1,52 @@
 import { JobDetails } from '../types';
 
+export type AppLanguage = 'en' | 'fr' | 'es';
+
+export const i18n = {
+    en: {
+        title: "Title",
+        company: "Company",
+        location: "Location",
+        contractType: "Contract Type",
+        salary: "Salary",
+        datePosted: "Date Posted",
+        experience: "Experience",
+        education: "Education",
+        url: "URL",
+        description: "Job Description",
+        profile: "Desired Profile",
+        hiringProcess: "Interview Process"
+    },
+    fr: {
+        title: "Titre",
+        company: "Entreprise",
+        location: "Lieu",
+        contractType: "Type de contrat",
+        salary: "Salaire",
+        datePosted: "Date de publication",
+        experience: "Expérience",
+        education: "Éducation",
+        url: "URL",
+        description: "Description du poste",
+        profile: "Profil recherché",
+        hiringProcess: "Déroulement des entretiens"
+    },
+    es: {
+        title: "Título",
+        company: "Empresa",
+        location: "Ubicación",
+        contractType: "Tipo de contrato",
+        salary: "Salario",
+        datePosted: "Fecha de publicación",
+        experience: "Experiencia",
+        education: "Educación",
+        url: "URL",
+        description: "Descripción del puesto",
+        profile: "Perfil deseado",
+        hiringProcess: "Proceso de selección"
+    }
+};
+
 interface SchemaJobPosting {
     '@type'?: string;
     title?: string;
@@ -7,15 +54,30 @@ interface SchemaJobPosting {
     description?: string;
     datePosted?: string;
     employmentType?: string;
-    jobLocation?: any; // Can be further typed if needed (Place/PostalAddress)
+    jobLocation?: any;
     url?: string;
+}
+
+/**
+ * Detects the language of the current WTTJ page.
+ */
+export function getPageLanguage(doc: Document): AppLanguage {
+    const htmlLang = doc.documentElement.lang?.toLowerCase() || '';
+    if (htmlLang.startsWith('fr')) return 'fr';
+    if (htmlLang.startsWith('es')) return 'es';
+    if (htmlLang.startsWith('en')) return 'en';
+
+    // Fallback: check og:url
+    const ogUrl = doc.querySelector('meta[property="og:url"]')?.getAttribute('content') || '';
+    if (ogUrl.includes('/fr/')) return 'fr';
+    if (ogUrl.includes('/es/')) return 'es';
+
+    return 'en'; // default
 }
 
 /**
  * Strips HTML tags from a string and cleans up whitespace.
  * Uses DOMParser for safer HTML parsing and robust whitespace normalization.
- * @param html The HTML string to clean.
- * @returns Cleaned plain text.
  */
 function stripHtmlAndClean(html: string | null | undefined): string | null {
     if (!html) return null;
@@ -23,8 +85,8 @@ function stripHtmlAndClean(html: string | null | undefined): string | null {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
     
-    // Ensure block elements don't merge text together
-    const blockElements =['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'section', 'article'];
+    // Prevent text merging for block elements (e.g., <div>A</div><div>B</div> -> A\nB instead of AB)
+    const blockElements =['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'section', 'article', 'ul'];
     blockElements.forEach(tag => {
         doc.querySelectorAll(tag).forEach(el => {
             el.insertAdjacentText('afterend', '\n');
@@ -37,12 +99,11 @@ function stripHtmlAndClean(html: string | null | undefined): string | null {
         li.insertAdjacentText('afterend', '\n');
     });
     
-    // Clean up multiple spaces, but preserve intentional newlines
     let text = doc.body.textContent || '';
     
-    // Replace multiple spaces/tabs with a single space
+    // Normalize whitespace: collapse multiple spaces/tabs into a single space
     text = text.replace(/[ \t\f\v]+/g, ' ');
-    // Replace multiple newlines with a max of two newlines
+    // Collapse multiple newlines into a max of two newlines
     text = text.replace(/\n\s*\n/g, '\n\n');
     
     return text.trim() || null;
@@ -50,12 +111,6 @@ function stripHtmlAndClean(html: string | null | undefined): string | null {
 
 /**
  * Extracts job details from a Welcome to the Jungle HTML document.
- * Strategy:
- * 1. Look for Schema.org JSON-LD (most reliable).
- * 2. Fallback to specific WTTJ data-testids (job-section-description, job-section-profile, etc).
- * 3. Fallback to semantic list items and icons for metadata (salary, remote, experience).
- * @param doc The HTML Document object of the job page.
- * @returns JobDetails object containing the extracted fields.
  */
 export function extractJobDetails(doc: Document): JobDetails {
     const jobDetails: JobDetails = {
@@ -73,7 +128,7 @@ export function extractJobDetails(doc: Document): JobDetails {
         url: null
     };
 
-    // --- 1. Attempt to parse JSON-LD Schema (Highly reliable for core info) ---
+    // --- 1. Attempt to parse JSON-LD Schema ---
     const jsonLdScripts = doc.querySelectorAll('script[type="application/ld+json"]');
 
     jsonLdScripts.forEach(el => {
@@ -84,13 +139,12 @@ export function extractJobDetails(doc: Document): JobDetails {
             const data = JSON.parse(scriptContent);
             let schemas: SchemaJobPosting[] = [];
             
-            // Handle cases where schemas are nested inside a @graph array
             if (data['@graph']) {
                 schemas = data['@graph'] as SchemaJobPosting[];
             } else if (Array.isArray(data)) {
                 schemas = data as SchemaJobPosting[];
             } else {
-                schemas = [data as SchemaJobPosting];
+                schemas =[data as SchemaJobPosting];
             }
             
             const jobPosting = schemas.find(schema => schema['@type'] === 'JobPosting');
@@ -99,94 +153,68 @@ export function extractJobDetails(doc: Document): JobDetails {
                 jobDetails.title = jobPosting.title || null;
                 jobDetails.company = jobPosting.hiringOrganization?.name || null;
                 jobDetails.description = jobPosting.description || null;
-                
+                jobDetails.contractType = jobPosting.employmentType || null;
+                jobDetails.url = jobPosting.url || null;
+
                 if (jobPosting.datePosted) {
                     try {
                         const date = new Date(jobPosting.datePosted);
-                        // Formats to "YYYY-MM-DD"
-                        jobDetails.datePosted = date.toISOString().split('T')[0]; 
+                        jobDetails.datePosted = date.toISOString().split('T')[0]; // Formats to YYYY-MM-DD
                     } catch {
                         jobDetails.datePosted = jobPosting.datePosted || null;
                     }
                 }
 
-                jobDetails.contractType = jobPosting.employmentType || null;
-
                 if (jobPosting.jobLocation) {
-                    const loc = Array.isArray(jobPosting.jobLocation)
-                        ? jobPosting.jobLocation[0]
-                        : jobPosting.jobLocation;
-
-                    // Support different Schema.org location formats
-                    jobDetails.location = loc?.address?.addressLocality
-                                       || loc?.address?.addressRegion
+                    const loc = Array.isArray(jobPosting.jobLocation) ? jobPosting.jobLocation[0] : jobPosting.jobLocation;
+                    jobDetails.location = loc?.address?.addressLocality 
+                                       || loc?.address?.addressRegion 
                                        || (typeof loc?.name === 'string' ? loc.name : null);
                 }
-                jobDetails.url = jobPosting.url || null;
             }
         } catch (error) {
             console.error("Error parsing JSON-LD:", error);
-            // Proceed to fallbacks
         }
     });
 
     // --- 2. Advanced Fallbacks & Supplemental Data Extraction ---
-
-    // Title & Company fallback
     if (!jobDetails.title) jobDetails.title = doc.querySelector('h1')?.textContent?.trim() || null;
     if (!jobDetails.company) {
         const metaTitle = doc.querySelector('meta[property="og:title"]')?.getAttribute('content');
         if (metaTitle && metaTitle.includes(' - ')) {
-            const parts = metaTitle.split(' - ');
-            jobDetails.company = parts.pop()?.trim() || null;
+            jobDetails.company = metaTitle.split(' - ').pop()?.trim() || null;
         }
     }
 
-    // WTTJ Specific Sections (using data-testids)
-    const extractSectionContent = (testId: string) => {
-        const element = doc.querySelector(`[data-testid="${testId}"]`);
-        return stripHtmlAndClean(element?.innerHTML);
-    };
+    const extractSectionContent = (testId: string) => stripHtmlAndClean(doc.querySelector(`[data-testid="${testId}"]`)?.innerHTML);
 
     jobDetails.description = extractSectionContent('job-section-description') || jobDetails.description;
     jobDetails.profile = extractSectionContent('job-section-profile');
     jobDetails.hiringProcess = extractSectionContent('job-section-process');
 
-    // --- 3. Extract Metadata from Info Badges (Salary, Remote, Exp, Edu) ---
-    // WTTJ uses <ul> with <li> for the top-level info badges, often within a data-testid="job-header-info"
+    // --- 3. Extract Metadata from Info Badges ---
     doc.querySelectorAll('[data-testid="job-header-info"] ul li').forEach(el => {
         const text = el.textContent?.trim() || '';
         const lowerText = text.toLowerCase();
 
-        // Salary Detection
         if (lowerText.includes('€') || lowerText.includes('$') || lowerText.includes('£') || lowerText.includes('salary')) {
             jobDetails.salary = text;
         }
-
-        // Remote Detection (update location if remote is found)
         if (lowerText.includes('remote') || lowerText.includes('télétravail')) {
             jobDetails.location = jobDetails.location ? `${jobDetails.location} (${text})` : text;
         }
-
-        // Experience Detection (e.g. "> 2 years", "Intermediate")
         if (lowerText.includes('expér') || lowerText.includes('year') || lowerText.includes('ans')) {
-            if (/\d/.test(text) || lowerText.includes('junior') || lowerText.includes('senior')) {
-                jobDetails.experience = text;
-            }
+            if (/\d/.test(text) || lowerText.includes('junior') || lowerText.includes('senior')) jobDetails.experience = text;
         }
-
-        // Education Detection
         if (lowerText.includes('bac') || lowerText.includes('master') || lowerText.includes('degree') || lowerText.includes('diplôme')) {
             jobDetails.education = text;
         }
     });
 
-    // URL fallback
     if (!jobDetails.url) {
         jobDetails.url = doc.querySelector('meta[property="og:url"]')?.getAttribute('content') || null;
     }
 
-    // Final cleanup: ensure all long text fields are properly normalized
     jobDetails.description = stripHtmlAndClean(jobDetails.description);
     jobDetails.profile = stripHtmlAndClean(jobDetails.profile);
     jobDetails.hiringProcess = stripHtmlAndClean(jobDetails.hiringProcess);
@@ -195,36 +223,34 @@ export function extractJobDetails(doc: Document): JobDetails {
 }
 
 /**
- * Formats the extracted JobDetails into a human-readable string.
- * @param details The JobDetails object.
- * @returns A formatted string of job details.
+ * Formats the extracted JobDetails into a localized human-readable string.
  */
-export function formatJobDetails(details: JobDetails): string {
-    const sections: string[] = [];
+export function formatJobDetails(details: JobDetails, lang: AppLanguage = 'en'): string {
+    const t = i18n[lang];
+    const sections: string[] =[];
 
-    if (details.title) sections.push(`Title: ${details.title}`);
-    if (details.company) sections.push(`Company: ${details.company}`);
-    if (details.location) sections.push(`Location: ${details.location}`);
-    if (details.contractType) sections.push(`Contract Type: ${details.contractType}`);
-    if (details.salary) sections.push(`Salary: ${details.salary}`);
-    if (details.datePosted) sections.push(`Date Posted: ${details.datePosted}`);
-    if (details.experience) sections.push(`Experience: ${details.experience}`);
-    if (details.education) sections.push(`Education: ${details.education}`);
-    if (details.url) sections.push(`URL: ${details.url}`);
+    if (details.title) sections.push(`${t.title}: ${details.title}`);
+    if (details.company) sections.push(`${t.company}: ${details.company}`);
+    if (details.location) sections.push(`${t.location}: ${details.location}`);
+    if (details.contractType) sections.push(`${t.contractType}: ${details.contractType}`);
+    if (details.salary) sections.push(`${t.salary}: ${details.salary}`);
+    if (details.datePosted) sections.push(`${t.datePosted}: ${details.datePosted}`);
+    if (details.experience) sections.push(`${t.experience}: ${details.experience}`);
+    if (details.education) sections.push(`${t.education}: ${details.education}`);
+    if (details.url) sections.push(`${t.url}: ${details.url}`);
     
-    if (details.description) sections.push(`\nJob Description:\n${details.description}`);
-    if (details.profile) sections.push(`\nDesired Profile:\n${details.profile}`);
-    if (details.hiringProcess) sections.push(`\nInterview Process:\n${details.hiringProcess}`);
+    if (details.description) sections.push(`\n${t.description}:\n${details.description}`);
+    if (details.profile) sections.push(`\n${t.profile}:\n${details.profile}`);
+    if (details.hiringProcess) sections.push(`\n${t.hiringProcess}:\n${details.hiringProcess}`);
 
     return sections.join('\n').trim();
 }
 
 /**
  * Main function to extract and format job details from the current document.
- * @param doc The HTML Document object.
- * @returns A formatted string of job details.
  */
 export function extractTextFromDoc(doc: Document): string {
     const details = extractJobDetails(doc);
-    return formatJobDetails(details);
+    const lang = getPageLanguage(doc);
+    return formatJobDetails(details, lang);
 }

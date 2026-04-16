@@ -1,6 +1,23 @@
-import { extractTextFromDoc } from './extractor';
+import { extractTextFromDoc, getPageLanguage, AppLanguage } from './extractor';
 
-// --- UI Logic (Encapsulated in Shadow DOM) ---
+const toastMessages = {
+    en: {
+        success: 'Job listing text copied to clipboard!',
+        errorCopy: 'Error: Failed to copy text. Check browser permissions.',
+        errorExtract: 'Error: Could not extract job data.'
+    },
+    fr: {
+        success: 'Texte de l\'offre copié dans le presse-papiers !',
+        errorCopy: 'Erreur : Échec de la copie. Vérifiez les permissions du navigateur.',
+        errorExtract: 'Erreur : Impossible d\'extraire les données de l\'offre.'
+    },
+    es: {
+        success: '¡Texto de la oferta copiado al portapapeles!',
+        errorCopy: 'Error: Fallo al copiar el texto. Verifica los permisos del navegador.',
+        errorExtract: 'Error: No se pudieron extraer los datos de la oferta.'
+    }
+};
+
 let toastTimeout: ReturnType<typeof setTimeout>;
 let shadowRoot: ShadowRoot | null = null;
 
@@ -12,7 +29,6 @@ function getShadowRoot(): ShadowRoot {
     document.body.appendChild(host);
     shadowRoot = host.attachShadow({ mode: 'open' });
 
-    // Inject styles directly into the Shadow DOM
     const style = document.createElement('style');
     style.textContent = `
         .jje-toast {
@@ -87,17 +103,20 @@ async function copyToClipboard(text: string): Promise<boolean> {
 
 // --- Message Listener ---
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+    const lang: AppLanguage = getPageLanguage(document);
+    const msgs = toastMessages[lang];
+
     if (request.type === 'executeScript') {
         const text = extractTextFromDoc(document);
         if (text) {
             const success = await copyToClipboard(text);
             if (success) {
-                showToast('Job listing text copied to clipboard!');
+                showToast(msgs.success);
             } else {
-                showToast('Error: Failed to copy text. Check browser permissions.');
+                showToast(msgs.errorCopy);
             }
         } else {
-            showToast('Error: Could not extract job data.');
+            showToast(msgs.errorExtract);
         }
     } else if (request.type === 'showToast') {
         showToast(request.message);
