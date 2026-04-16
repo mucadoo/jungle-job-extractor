@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer';
+import puppeteer, { Browser, Page } from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -38,15 +38,15 @@ if (fs.existsSync(snapshotsDir)) {
 }
 fs.mkdirSync(snapshotsDir, { recursive: true });
 
-async function scrollToLoadJobs(page: puppeteer.Page) {
+async function scrollToLoadJobs(page: Page) {
     for (let i = 0; i < 6; i++) {
         await page.evaluate(() => window.scrollBy(0, window.innerHeight * 0.8));
         await new Promise(r => setTimeout(r, 700));
     }
 }
 
-async function processJob(company: string, lang: string, browser: puppeteer.Browser): Promise<void> {
-    let page: puppeteer.Page | null = null;
+async function processJob(company: string, lang: string, browser: Browser): Promise<void> {
+    let page: Page | null = null;
     let attempts = 0;
 
     while (attempts <= MAX_RETRIES) {
