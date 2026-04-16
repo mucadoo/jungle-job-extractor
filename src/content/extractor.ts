@@ -133,7 +133,8 @@ export function extractJobDetails(doc: Document): JobDetails {
         education: null,
         experience: null,
         hiringProcess: null,
-        url: null
+        url: null,
+        extractionMethod: null
     };
 
     // --- 1. Attempt to parse JSON-LD Schema ---
@@ -163,6 +164,7 @@ export function extractJobDetails(doc: Document): JobDetails {
                 jobDetails.description = jobPosting.description || null;
                 jobDetails.contractType = jobPosting.employmentType || null;
                 jobDetails.url = jobPosting.url || null;
+                jobDetails.extractionMethod = 'json-ld';
 
                 if (jobPosting.datePosted) {
                     try {
@@ -186,15 +188,30 @@ export function extractJobDetails(doc: Document): JobDetails {
     });
 
     // --- 2. Advanced Fallbacks & Supplemental Data Extraction ---
-    if (!jobDetails.title) jobDetails.title = doc.querySelector('h1')?.textContent?.trim() || null;
+    if (!jobDetails.title) {
+        jobDetails.title = doc.querySelector('h1')?.textContent?.trim() || null;
+        if (jobDetails.title && !jobDetails.extractionMethod) jobDetails.extractionMethod = 'fallback';
+    }
+
     if (!jobDetails.company) {
         const metaTitle = doc.querySelector('meta[property="og:title"]')?.getAttribute('content');
         if (metaTitle && metaTitle.includes(' - ')) {
             jobDetails.company = metaTitle.split(' - ').pop()?.trim() || null;
+            if (jobDetails.company && !jobDetails.extractionMethod) jobDetails.extractionMethod = 'fallback';
         }
     }
 
-    const extractSectionContent = (testId: string) => stripHtmlAndClean(doc.querySelector(`[data-testid="${testId}"]`)?.innerHTML);
+    const extractSectionContent = (testId: string) => {
+        const el = doc.querySelector(`[data-testid="${testId}"]`);
+        if (el && !jobDetails.extractionMethod) {
+             // If we didn't have a method or it was fallback, and we find a testid, upgrade it
+             // Actually, JSON-LD is still better, so only upgrade if it's currently null or fallback
+             if (!jobDetails.extractionMethod || jobDetails.extractionMethod === 'fallback') {
+                 jobDetails.extractionMethod = 'testid';
+             }
+        }
+        return stripHtmlAndClean(el?.innerHTML);
+    };
 
     jobDetails.description = extractSectionContent('job-section-description') || jobDetails.description;
     jobDetails.profile = extractSectionContent('job-section-profile');

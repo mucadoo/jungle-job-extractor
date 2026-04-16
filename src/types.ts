@@ -11,6 +11,8 @@ export interface JobDetails {
     experience?: string | null;
     hiringProcess?: string | null;
     url?: string | null;
+    // Metadata for tracking scraper reliability
+    extractionMethod?: 'json-ld' | 'testid' | 'fallback' | null;
     // Keep these for backward compatibility if needed by the UI
     contract?: string | null;
     startDate?: string | null;
