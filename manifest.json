@@ -1,10 +1,13 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "Welcome to the Jungle Job Listing Extractor",
   "version": "1.0",
   "description": "Extract and copy job listing details to your clipboard from Welcome To The Jungle job pages.",
-  "permissions": ["activeTab", "tabs", "http://*/*", "https://*/*"],
-  "browser_action": {
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "action": {
     "default_icon": {
       "16": "icon.png",
       "48": "icon.png",
@@ -12,13 +15,20 @@
     }
   },
   "background": {
-    "scripts": ["background.js"]
+    "service_worker": "src/background/background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["contentScript.js"],
-      "css": ["style.css"]
+      "matches": [
+        "https://www.welcometothejungle.com/*/companies/*/jobs/*"
+      ],
+      "js": [
+        "src/content/content.js"
+      ],
+      "css": [
+        "src/content/style.css"
+      ]
     }
   ]
 }
