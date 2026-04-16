@@ -3,25 +3,31 @@
   "version": "1.0.0",
   "description": "Extract and copy job listing details from Welcome To The Jungle.",
   "type": "module",
+  "private": true,
   "scripts": {
     "dev": "vite build --watch",
     "build": "tsc && vite build",
     "test": "vitest run",
     "test:watch": "vitest",
     "download-snapshots": "tsx scripts/downloadSnapshots.ts",
-    "package": "npm run build && zip -r extension.zip dist/*"
+    "package": "npm run build && zip -r extension.zip dist/*",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.246",
-    "@types/node": "^20.5.9",
-    "jsdom": "^22.1.0",
-    "tsx": "^3.12.7",
-    "typescript": "^5.2.2",
-    "vite": "^4.4.9",
-    "vite-plugin-static-copy": "^0.17.0",
-    "vitest": "^0.34.4"
+    "@types/chrome": "^0.1.40",
+    "@types/node": "^22.13.0",
+    "jsdom": "^26.0.0",
+    "tsx": "^4.19.3",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.8",
+    "vite-plugin-static-copy": "^4.0.1",
+    "vitest": "^4.1.4"
   },
   "dependencies": {
-    "puppeteer": "^21.0.0"
+    "puppeteer": "^24.41.0"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

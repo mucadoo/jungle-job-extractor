@@ -1,1 +1,30 @@
-/.idea/
+# Dependencies
+node_modules/
+dist/
+*.zip
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Tests
+tests/snapshots/*.html
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Vite
+vite.config.ts.timestamp-*
