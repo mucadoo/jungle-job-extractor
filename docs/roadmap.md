@@ -5,15 +5,11 @@ here — anything already handled is left out rather than listed as done.
 
 ## Open
 
-- [ ] **Test on Firefox / Edge.** No `browser_specific_settings`/Gecko config, no Firefox or Edge
-      mentions anywhere in the repo — the extension has only ever been built and loaded as an
-      unpacked Chrome (Manifest V3) extension per the README's "Loading into Chrome" instructions.
-      Manifest V3 is broadly supported on both Firefox (109+) and Edge (Chromium-based, so likely
-      close to drop-in), but neither has been verified.
-- [ ] **Publish to Chrome Extension Store.** `manifest.json` is still at `"version": "1.0"` with no
-      Chrome Web Store listing link anywhere in the README, and CI (`.github/workflows/ci-cd.yml`)
-      only packages a `.zip` GitHub Release on a version tag — no store-submission step. Not
-      published yet.
+Nothing here right now — the two items originally captured (cross-browser testing on Firefox/Edge,
+and publishing to the Chrome Web Store) are QA/store-submission actions rather than code changes,
+so they moved back to Light Brain as personal/ops tasks instead. (Manifest V3 is broadly supported
+on both browsers already, per the README's "Loading into Chrome" instructions — worth noting if
+either comes up again: Firefox 109+ and Edge, Chromium-based, likely close to drop-in.)
 
 ## Already done
 
